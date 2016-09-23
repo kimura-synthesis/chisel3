@@ -148,7 +148,10 @@ private[chisel3] object Builder {
   def components: ArrayBuffer[Component] = dynamicContext.components
 
   def pushCommand[T <: Command](c: T): T = {
-    dynamicContext.currentModule.foreach(_._commands += c)
+    dynamicContext.currentModule foreach {
+      case _: BlackBox => throwException("Cannot add hardware to a BlackBox")
+      case m => m._commands += c
+    }
     c
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = pushCommand(cmd).id

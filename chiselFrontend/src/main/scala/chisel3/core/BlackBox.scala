@@ -3,7 +3,8 @@
 package chisel3.core
 
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{ModuleIO, DefInvalid}
+import chisel3.internal.firrtl._
+import chisel3.internal.throwException
 import chisel3.internal.sourceinfo.SourceInfo
 
 /** Defines a black box, which is a module that can be referenced from within
@@ -16,10 +17,23 @@ import chisel3.internal.sourceinfo.SourceInfo
   * }}}
   */
 // REVIEW TODO: make Verilog parameters part of the constructor interface?
-abstract class BlackBox extends Module {
-  // Don't bother taking override_clock|reset, clock/reset locked out anyway
-  // TODO: actually implement this.
-  def setVerilogParameters(s: String): Unit = {}
+abstract class BlackBox(params: Map[String, Any] = Map.empty[String, Any]) extends Module {
+
+  // TODO: Do better? Use Numeric instead of Int, Long, BigInt, & Double?
+  final private[core] def parameters: Seq[Param] = {
+    val boxed = params map { case (name, value) =>
+      value match {
+        case int: Int => IntParam(name, int)
+        case long: Long => IntParam(name, long)
+        case bigint: BigInt => IntParam(name, bigint)
+        case dbl: Double => DoubleParam(name, dbl)
+        case str: String => StringParam(name, str)
+        case t => throwException(s"Illegal BlackBox parameter of type ${t.getClass.getSimpleName}",
+                                 new java.lang.IllegalArgumentException)
+      }
+    }
+    boxed.toList.sortBy(_.name) // Deterministic
+  }
 
   // The body of a BlackBox is empty, the real logic happens in firrtl/Emitter.scala
   // Bypass standard clock, reset, io port declaration by flattening io

@@ -83,18 +83,15 @@ class BlackBoxWithClockTester extends BasicTester {
   when(end) { stop() }
 }
 
-/*
-// Must determine how to handle parameterized Verilog
-class BlackBoxConstant(value: Int) extends BlackBox {
-  val io = new Bundle() {
-    val out = UInt(width=log2Up(value)).asOutput
+class BlackBoxConstant(params: Map[String, Any]) extends BlackBox(params) {
+  val io = new Bundle {
+    val out = UInt(width = params("WIDTH").asInstanceOf[Int]).asOutput
   }
-  override val name = s"#(WIDTH=${log2Up(value)},VALUE=$value) "
 }
 
 class BlackBoxWithParamsTester extends BasicTester {
-  val blackBoxOne  = Module(new BlackBoxConstant(1))
-  val blackBoxFour = Module(new BlackBoxConstant(4))
+  val blackBoxOne  = Module(new BlackBoxConstant(Map("WIDTH" -> 1, "VALUE" -> 1)))
+  val blackBoxFour  = Module(new BlackBoxConstant(Map("WIDTH" -> 3, "VALUE" -> 4)))
 
   val (cycles, end) = Counter(Bool(true), 4)
 
@@ -103,7 +100,6 @@ class BlackBoxWithParamsTester extends BasicTester {
 
   when(end) { stop() }
 }
-*/
 
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
@@ -116,6 +112,10 @@ class BlackBoxSpec extends ChiselFlatSpec {
   }
   "A BlackBoxed register" should "work" in {
     assertTesterPasses({ new BlackBoxWithClockTester },
+        Seq("/BlackBoxTest.v"))
+  }
+  "BlackBoxes with parameters" should "work" in {
+    assertTesterPasses({ new BlackBoxWithParamsTester },
         Seq("/BlackBoxTest.v"))
   }
 }

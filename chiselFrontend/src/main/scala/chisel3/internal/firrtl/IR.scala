@@ -146,6 +146,14 @@ object MemPortDirection {
   object INFER extends MemPortDirection("infer")
 }
 
+/** Parameters for BlackBoxes */
+abstract class Param {
+  def name: String
+}
+case class IntParam(name: String, value: BigInt) extends Param
+case class DoubleParam(name: String, value: Double) extends Param
+case class StringParam(name: String, value: String) extends Param
+
 abstract class Command {
   def sourceInfo: SourceInfo
 }
@@ -168,8 +176,14 @@ case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
-case class Component(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Arg
 case class Port(id: Data, dir: Direction)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
+abstract class Component extends Arg {
+  def id: Module
+  def name: String
+  def ports: Seq[Port]
+}
+case class DefModule(id: Module, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+case class DefBlackBox(id: Module, name: String, ports: Seq[Port], params: Seq[Param]) extends Component
 
 case class Circuit(name: String, components: Seq[Component])
