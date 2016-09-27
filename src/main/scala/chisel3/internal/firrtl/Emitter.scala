@@ -45,13 +45,14 @@ private class Emitter(circuit: Circuit) {
     }
   }
 
-  private def emitParam(p: Param): String = {
+  private def emitParam(name: String, p: Param): String = {
     val str = p match {
-      case IntParam(_, value) => value.toString
-      case DoubleParam(_, value) => value.toString
-      case StringParam(_, str) => "\"" + str + "\""
+      case IntParam(value) => value.toString
+      case DoubleParam(value) => value.toString
+      case StringParam(str) => "\"" + str + "\""
+      case RawParam(str) => "'" + str + "'"
     }
-    s"parameter ${p.name} = $str"
+    s"parameter $name = $str"
   }
 
   // Map of Module FIRRTL definition to FIRRTL name, if it has been emitted already.
@@ -76,8 +77,8 @@ private class Emitter(circuit: Circuit) {
       m match {
         case bb: DefBlackBox =>
           // Firrtl extmodule can overrule name
-          body ++= newline + s"name = ${bb.id.desiredName}"
-          body ++= newline + (bb.params map emitParam mkString newline)
+          body ++= newline + s"defname = ${bb.id.desiredName}"
+          body ++= newline + (bb.params map { case (n, p) => emitParam(n, p) } mkString newline)
           // TODO: implement parameters
         case mod: DefModule => for (cmd <- mod.commands) {
           body ++= newline + emit(cmd, mod)

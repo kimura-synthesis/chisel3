@@ -34,7 +34,7 @@ object Module {
     // Blackbox inherits from Module so we have to match on it first TODO fix
     val component = m match {
       case bb: BlackBox =>
-        DefBlackBox(bb, bb.name, ports, bb.parameters)
+        DefBlackBox(bb, bb.name, ports, bb.params)
       case mod: Module =>
         mod._commands.prepend(DefInvalid(childSourceInfo, mod.io.ref)) // init module outputs
         DefModule(mod, mod.name, ports, mod._commands)

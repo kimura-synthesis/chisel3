@@ -7,6 +7,14 @@ import chisel3.internal.firrtl._
 import chisel3.internal.throwException
 import chisel3.internal.sourceinfo.SourceInfo
 
+/** Parameters for BlackBoxes */
+sealed abstract class Param
+case class IntParam(value: BigInt) extends Param
+case class DoubleParam(value: Double) extends Param
+case class StringParam(value: String) extends Param
+/** Unquoted String */
+case class RawParam(value: String) extends Param
+
 /** Defines a black box, which is a module that can be referenced from within
   * Chisel, but is not defined in the emitted Verilog. Useful for connecting
   * to RTL modules defined outside Chisel.
@@ -17,23 +25,7 @@ import chisel3.internal.sourceinfo.SourceInfo
   * }}}
   */
 // REVIEW TODO: make Verilog parameters part of the constructor interface?
-abstract class BlackBox(params: Map[String, Any] = Map.empty[String, Any]) extends Module {
-
-  // TODO: Do better? Use Numeric instead of Int, Long, BigInt, & Double?
-  final private[core] def parameters: Seq[Param] = {
-    val boxed = params map { case (name, value) =>
-      value match {
-        case int: Int => IntParam(name, int)
-        case long: Long => IntParam(name, long)
-        case bigint: BigInt => IntParam(name, bigint)
-        case dbl: Double => DoubleParam(name, dbl)
-        case str: String => StringParam(name, str)
-        case t => throwException(s"Illegal BlackBox parameter of type ${t.getClass.getSimpleName}",
-                                 new java.lang.IllegalArgumentException)
-      }
-    }
-    boxed.toList.sortBy(_.name) // Deterministic
-  }
+abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param]) extends Module {
 
   // The body of a BlackBox is empty, the real logic happens in firrtl/Emitter.scala
   // Bypass standard clock, reset, io port declaration by flattening io

@@ -83,20 +83,52 @@ class BlackBoxWithClockTester extends BasicTester {
   when(end) { stop() }
 }
 
-class BlackBoxConstant(params: Map[String, Any]) extends BlackBox(params) {
+class BlackBoxConstant(value: Int) extends BlackBox(
+    Map("VALUE" -> value, "WIDTH" -> log2Up(value + 1))) {
+  require(value >= 0, "value must be a UInt!")
   val io = new Bundle {
-    val out = UInt(width = params("WIDTH").asInstanceOf[Int]).asOutput
+    val out = UInt(width = log2Up(value + 1)).asOutput
+  }
+}
+
+class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str)) {
+  val io = new Bundle {
+    val out = UInt(width = 32)
+  }
+}
+
+class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl)) {
+  val io = new Bundle {
+    val out = UInt(width = 64)
+  }
+}
+
+class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawParam(raw))) {
+  val io = new Bundle {
+    val out = UInt(width = w)
   }
 }
 
 class BlackBoxWithParamsTester extends BasicTester {
-  val blackBoxOne  = Module(new BlackBoxConstant(Map("WIDTH" -> 1, "VALUE" -> 1)))
-  val blackBoxFour  = Module(new BlackBoxConstant(Map("WIDTH" -> 3, "VALUE" -> 4)))
+  val blackBoxOne  = Module(new BlackBoxConstant(1))
+  val blackBoxFour  = Module(new BlackBoxConstant(4))
+  val blackBoxStringParamOne = Module(new BlackBoxStringParam("one"))
+  val blackBoxStringParamTwo = Module(new BlackBoxStringParam("two"))
+  val blackBoxRealParamOne = Module(new BlackBoxRealParam(1.0))
+  val blackBoxRealParamNeg = Module(new BlackBoxRealParam(-1.0))
+  val blackBoxTypeParamBit = Module(new BlackBoxTypeParam(1, "bit"))
+  val blackBoxTypeParamWord = Module(new BlackBoxTypeParam(32, "bit [31:0]"))
 
   val (cycles, end) = Counter(Bool(true), 4)
 
   assert(blackBoxOne.io.out  === UInt(1))
   assert(blackBoxFour.io.out === UInt(4))
+  assert(blackBoxStringParamOne.io.out === UInt(1))
+  assert(blackBoxStringParamTwo.io.out === UInt(2))
+  assert(blackBoxRealParamOne.io.out === UInt(0x3ff0000000000000L))
+  assert(blackBoxRealParamNeg.io.out === UInt(BigInt("bff0000000000000", 16)))
+  assert(blackBoxTypeParamBit.io.out === UInt(1))
+  assert(blackBoxTypeParamWord.io.out === UInt("hdeadbeef", 32))
 
   when(end) { stop() }
 }
